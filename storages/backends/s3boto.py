@@ -1,3 +1,4 @@
+import logging
 import mimetypes
 import os
 from datetime import datetime
@@ -148,8 +149,9 @@ class S3BotoStorageFile(File):
             self.file.seek(0)
             self.file.truncate()
 
-    def seek(*args, **kwargs):
-        raise NotImplementedError
+    def seek(self, *args, **kwargs):
+        logging.warning('seek() called on S3BotoStorageFile; may break tell()')
+        return super(S3BotoStorageFile, self).seek(*args, **kwargs)
 
     def tell(self):
         return self._remote_file_size + self.file.tell()
