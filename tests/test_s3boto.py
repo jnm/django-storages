@@ -215,6 +215,7 @@ class S3BotoStorageTests(S3BotoTestCase):
             content += '*' * int(file.buffer_size / 10)
             file.write(content)
             written_content += content
+            self.assertEqual(file.tell(), len(written_content))
             counter += 1
 
         # Save the internal file before closing
