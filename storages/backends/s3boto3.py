@@ -1,4 +1,5 @@
 import io
+import logging
 import mimetypes
 import os
 import posixpath
@@ -83,6 +84,7 @@ class S3Boto3StorageFile(File):
         if buffer_size is not None:
             self.buffer_size = buffer_size
         self._write_counter = 0
+        self._remote_file_size = 0
 
     @property
     def size(self):
@@ -108,6 +110,10 @@ class S3Boto3StorageFile(File):
 
     file = property(_get_file, _set_file)
 
+    def seek(self, *args, **kwargs):
+        logging.warning('seek() called on S3Boto3StorageFile; may break tell()')
+        return super().seek(*args, **kwargs)
+
     def read(self, *args, **kwargs):
         if 'r' not in self._mode:
             raise AttributeError("File was not opened in read mode.")
@@ -117,6 +123,9 @@ class S3Boto3StorageFile(File):
         if 'r' not in self._mode:
             raise AttributeError("File was not opened in read mode.")
         return self._force_mode(super(S3Boto3StorageFile, self).readline(*args, **kwargs))
+
+    def tell(self):
+        return self._remote_file_size + self.file.tell()
 
     def write(self, content):
         if 'w' not in self._mode:
@@ -146,6 +155,7 @@ class S3Boto3StorageFile(File):
         """
         if self._buffer_file_size:
             self._write_counter += 1
+            self._remote_file_size += self._buffer_file_size
             self.file.seek(0)
             part = self._multipart.Part(self._write_counter)
             part.upload(Body=self.file.read())
